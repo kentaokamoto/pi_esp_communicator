@@ -33,13 +33,19 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 			imu.readAccel();
 			imu.readGyro();
 		}
-		msg.linear_acceleration.x = imu.calcAccel(imu.ax);
-        msg.linear_acceleration.y = imu.calcAccel(imu.ay);
-        msg.linear_acceleration.z = imu.calcAccel(imu.az);
+		double ax = imu.calcAccel(imu.ax)*9.797;
+		double ay = imu.calcAccel(imu.ay)*9.797;
+		double az = imu.calcAccel(imu.az)*9.797;
+		msg.linear_acceleration.x = ax;
+        msg.linear_acceleration.y = ay;
+        msg.linear_acceleration.z = az;
 
-		msg.angular_velocity.x = imu.calcGyro(imu.gx);
-        msg.angular_velocity.y = imu.calcGyro(imu.gy);
-        msg.angular_velocity.z = imu.calcGyro(imu.gz);
+		double gx = imu.calcGyro(imu.gx)*3.142/180;
+		double gy = imu.calcGyro(imu.gy)*3.142/180;
+		double gz = imu.calcGyro(imu.gz)*3.142/180;
+		msg.angular_velocity.x = gx;
+        msg.angular_velocity.y = gy;
+        msg.angular_velocity.z = gz;
 	}	
 }
 
