@@ -28,16 +28,25 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 	RCLC_UNUSED(last_call_time);
 	if (timer != NULL) {
 		RCSOFTCHECK(rcl_publish(&publisher, &msg, NULL));
-        if ( imu.accelAvailable() ){imu.readAccel();}
-		msg.linear_acceleration.x = imu.ax;
-        msg.linear_acceleration.y = imu.ay;
-        msg.linear_acceleration.z = imu.az;
+        if ( imu.accelAvailable() )
+		{
+			imu.readAccel();
+			imu.readGyro();
+		}
+		msg.linear_acceleration.x = imu.calcAccel(imu.ax);
+        msg.linear_acceleration.y = imu.calcAccel(imu.ay);
+        msg.linear_acceleration.z = imu.calcAccel(imu.az);
+
+		msg.angular_velocity.x = imu.calcGyro(imu.gx);
+        msg.angular_velocity.y = imu.calcGyro(imu.gy);
+        msg.angular_velocity.z = imu.calcGyro(imu.gz);
 	}	
 }
 
 extern "C" void appMain(void * arg)
 {
 	Wire.begin();
+	imu.begin();
 
 	rcl_allocator_t allocator = rcl_get_default_allocator();
 	rclc_support_t support;
