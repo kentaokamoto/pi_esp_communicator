@@ -73,7 +73,7 @@ extern "C" void appMain(void * arg)
 
 	// create timer,
 	rcl_timer_t timer;
-	const unsigned int timer_timeout = 1000;
+	const unsigned int timer_timeout = 1;
 	RCCHECK(rclc_timer_init_default(
 		&timer,
 		&support,
@@ -87,7 +87,7 @@ extern "C" void appMain(void * arg)
 
 	while(1){
 		rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
-		usleep(100000);
+		usleep(1000);
 	}
 
 	// free resources
