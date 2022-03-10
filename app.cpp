@@ -4,6 +4,7 @@
 #include <rcl/rcl.h>
 #include <rcl/error_handling.h>
 #include <sensor_msgs/msg/imu.h>
+#include <sensor_msgs/msg/magnetic_field.h>
 
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
@@ -20,19 +21,34 @@
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
 
 rcl_publisher_t publisher;
+rcl_publisher_t publisher_mag;
+
 sensor_msgs__msg__Imu msg;
+sensor_msgs__msg__MagneticField msg_mag;
+
 LSM9DS1 imu;
 
 void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 {
 	RCLC_UNUSED(last_call_time);
 	if (timer != NULL) {
-		RCSOFTCHECK(rcl_publish(&publisher, &msg, NULL));
-        if ( imu.accelAvailable() )
+		/*
+        if(imu.accelAvailable())
 		{
 			imu.readAccel();
+		}
+		if(imu.gyroAvailable())
+		{
 			imu.readGyro();
 		}
+		if(imu.magAvailable())
+		{
+			imu.readMag();
+		}
+		*/
+		imu.readAccel();
+		imu.readGyro();
+		imu.readMag();
 		double ax = imu.calcAccel(imu.ax)*9.797;
 		double ay = imu.calcAccel(imu.ay)*9.797;
 		double az = imu.calcAccel(imu.az)*9.797;
@@ -46,6 +62,16 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 		msg.angular_velocity.x = gx;
         msg.angular_velocity.y = gy;
         msg.angular_velocity.z = gz;
+
+		double mx = imu.calcMag(imu.mx);
+		double my = imu.calcMag(imu.my);
+		double mz = imu.calcMag(imu.mz);
+		msg_mag.magnetic_field.x = mx;
+        msg_mag.magnetic_field.y = my;
+        msg_mag.magnetic_field.z = mz;
+
+		RCSOFTCHECK(rcl_publish(&publisher, (const void *) &msg, NULL));
+		RCSOFTCHECK(rcl_publish(&publisher_mag, (const void *) &msg_mag, NULL));
 	}	
 }
 
@@ -69,11 +95,17 @@ extern "C" void appMain(void * arg)
 		&publisher,
 		&node,
 		ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
-		"/imu"));
+		"/copto/imu"));
+
+	RCCHECK(rclc_publisher_init_default(
+		&publisher_mag,
+		&node,
+		ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, MagneticField),
+		"/copto/mag"));
 
 	// create timer,
 	rcl_timer_t timer;
-	const unsigned int timer_timeout = 1;
+	const unsigned int timer_timeout = 10;
 	RCCHECK(rclc_timer_init_default(
 		&timer,
 		&support,
@@ -92,6 +124,7 @@ extern "C" void appMain(void * arg)
 
 	// free resources
 	RCCHECK(rcl_publisher_fini(&publisher, &node))
+	RCCHECK(rcl_publisher_fini(&publisher_mag, &node))
 	RCCHECK(rcl_node_fini(&node))
 
   	vTaskDelete(NULL);
