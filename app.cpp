@@ -88,13 +88,13 @@ extern "C" void appMain(void * arg)
 	RCCHECK(rclc_node_init_default(&node, "pi_esp_communicator", "", &support));
 
 	// create publisher
-	RCCHECK(rclc_publisher_init__best_effort(
+	RCCHECK(rclc_publisher_init_best_effort(
 		&publisher_imu,
 		&node,
 		ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
 		"/copto/imu"));
 
-	RCCHECK(rclc_publisher_init__best_effort(
+	RCCHECK(rclc_publisher_init_best_effort(
 		&publisher_mag,
 		&node,
 		ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, MagneticField),
@@ -102,7 +102,7 @@ extern "C" void appMain(void * arg)
 
 	// create timer,
 	rcl_timer_t timer;
-	const unsigned int timer_timeout = 200;
+	const unsigned int timer_timeout = 10;
 	RCCHECK(rclc_timer_init_default(
 		&timer,
 		&support,
@@ -116,7 +116,7 @@ extern "C" void appMain(void * arg)
 
 	while(1){
 		rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
-		usleep(10000);
+		usleep(100);
 	}
 
 	// free resources
