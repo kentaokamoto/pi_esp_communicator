@@ -32,7 +32,7 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 {
 	RCLC_UNUSED(last_call_time);
 	if (timer != NULL) {
-		/*
+		
         if(imu.accelAvailable())
 		{
 			imu.readAccel();
@@ -45,10 +45,7 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 		{
 			imu.readMag();
 		}
-		*/
-		imu.readAccel();
-		imu.readGyro();
-		imu.readMag();
+		
 		double ax = imu.calcAccel(imu.ax)*9.797;
 		double ay = imu.calcAccel(imu.ay)*9.797;
 		double az = imu.calcAccel(imu.az)*9.797;
@@ -91,13 +88,13 @@ extern "C" void appMain(void * arg)
 	RCCHECK(rclc_node_init_default(&node, "pi_esp_communicator", "", &support));
 
 	// create publisher
-	RCCHECK(rclc_publisher_init_default(
+	RCCHECK(rclc_publisher_init__best_effort(
 		&publisher_imu,
 		&node,
 		ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
 		"/copto/imu"));
 
-	RCCHECK(rclc_publisher_init_default(
+	RCCHECK(rclc_publisher_init__best_effort(
 		&publisher_mag,
 		&node,
 		ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, MagneticField),
@@ -114,11 +111,11 @@ extern "C" void appMain(void * arg)
 
 	// create executor
 	rclc_executor_t executor;
-	RCCHECK(rclc_executor_init(&executor, &support.context, 2, &allocator));
+	RCCHECK(rclc_executor_init(&executor, &support.context, 1, &allocator));
 	RCCHECK(rclc_executor_add_timer(&executor, &timer));
 
 	while(1){
-		rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10));
+		rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
 		usleep(10000);
 	}
 
