@@ -69,7 +69,7 @@ extern "C" void appMain(void * arg)
 		&publisher,
 		&node,
 		ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
-		"/imu"));
+		"/copto/imu"));
 
 	// create timer,
 	rcl_timer_t timer;
