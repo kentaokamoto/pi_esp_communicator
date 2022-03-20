@@ -20,10 +20,10 @@
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc);vTaskDelete(NULL);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
 
-rcl_publisher_t publisher;
+rcl_publisher_t publisher_imu;
 rcl_publisher_t publisher_mag;
 
-sensor_msgs__msg__Imu msg;
+sensor_msgs__msg__Imu msg_imu;
 sensor_msgs__msg__MagneticField msg_mag;
 
 LSM9DS1 imu;
@@ -52,16 +52,16 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 		double ax = imu.calcAccel(imu.ax)*9.797;
 		double ay = imu.calcAccel(imu.ay)*9.797;
 		double az = imu.calcAccel(imu.az)*9.797;
-		msg.linear_acceleration.x = ax;
-        msg.linear_acceleration.y = ay;
-        msg.linear_acceleration.z = az;
+		msg_imu.linear_acceleration.x = ax;
+        msg_imu.linear_acceleration.y = ay;
+        msg_imu.linear_acceleration.z = az;
 
 		double gx = imu.calcGyro(imu.gx)*3.142/180;
 		double gy = imu.calcGyro(imu.gy)*3.142/180;
 		double gz = imu.calcGyro(imu.gz)*3.142/180;
-		msg.angular_velocity.x = gx;
-        msg.angular_velocity.y = gy;
-        msg.angular_velocity.z = gz;
+		msg_imu.angular_velocity.x = gx;
+        msg_imu.angular_velocity.y = gy;
+        msg_imu.angular_velocity.z = gz;
 
 		double mx = imu.calcMag(imu.mx);
 		double my = imu.calcMag(imu.my);
@@ -70,7 +70,7 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
         msg_mag.magnetic_field.y = my;
         msg_mag.magnetic_field.z = mz;
 
-		RCSOFTCHECK(rcl_publish(&publisher, (const void *) &msg, NULL));
+		RCSOFTCHECK(rcl_publish(&publisher_imu, (const void *) &msg_imu, NULL));
 		RCSOFTCHECK(rcl_publish(&publisher_mag, (const void *) &msg_mag, NULL));
 	}	
 }
@@ -92,7 +92,7 @@ extern "C" void appMain(void * arg)
 
 	// create publisher
 	RCCHECK(rclc_publisher_init_default(
-		&publisher,
+		&publisher_imu,
 		&node,
 		ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
 		"/copto/imu"));
@@ -105,7 +105,7 @@ extern "C" void appMain(void * arg)
 
 	// create timer,
 	rcl_timer_t timer;
-	const unsigned int timer_timeout = 10;
+	const unsigned int timer_timeout = 200;
 	RCCHECK(rclc_timer_init_default(
 		&timer,
 		&support,
@@ -114,16 +114,16 @@ extern "C" void appMain(void * arg)
 
 	// create executor
 	rclc_executor_t executor;
-	RCCHECK(rclc_executor_init(&executor, &support.context, 1, &allocator));
+	RCCHECK(rclc_executor_init(&executor, &support.context, 2, &allocator));
 	RCCHECK(rclc_executor_add_timer(&executor, &timer));
 
 	while(1){
-		rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
-		usleep(1000);
+		rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10));
+		usleep(10000);
 	}
 
 	// free resources
-	RCCHECK(rcl_publisher_fini(&publisher, &node))
+	RCCHECK(rcl_publisher_fini(&publisher_imu, &node))
 	RCCHECK(rcl_publisher_fini(&publisher_mag, &node))
 	RCCHECK(rcl_node_fini(&node))
 
