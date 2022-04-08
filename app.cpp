@@ -14,11 +14,15 @@
 #include "freertos/task.h"
 #include <Wire.h>
 #include <SPI.h>
+// #include <ESP32Servo.h>
 #include <SparkFunLSM9DS1.h>
 #endif
 
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc);vTaskDelete(NULL);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
+
+#define MAX_VAL 255
+#define MIN_VAL 0
 
 rcl_publisher_t publisher_imu;
 rcl_publisher_t publisher_mag;
@@ -27,9 +31,22 @@ sensor_msgs__msg__Imu msg_imu;
 sensor_msgs__msg__MagneticField msg_mag;
 
 LSM9DS1 imu;
+// ESP32PWM motor0;
+int motor0_pin = A15;
+int count = 1;
+int freq_pwm = 10000;
 
 void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 {
+	delay(1000);
+	if(MIN_VAL+count*10>MAX_VAL){
+		ledcWrite(0,MIN_VAL);
+	}
+	else{
+		ledcWrite(0,MIN_VAL+count*0.1);
+		count++;
+	}
+	
 	RCLC_UNUSED(last_call_time);
 	if (timer != NULL) {
 		
@@ -76,6 +93,15 @@ extern "C" void appMain(void * arg)
 {
 	Wire.begin();
 	imu.begin();
+	// motor0.attachPin(motor0_pin, freq_pwm, 10);
+	// motor0.write(MAX_VAL);
+	ledcSetup(0,freq_pwm,8);
+	ledcAttachPin(motor0_pin, 0);
+	ledcWrite(0,255);
+	delay(1000);
+	ledcWrite(0,0);
+	// motor0.write(MIN_VAL);
+	delay(1000);
 
 	rcl_allocator_t allocator = rcl_get_default_allocator();
 	rclc_support_t support;
