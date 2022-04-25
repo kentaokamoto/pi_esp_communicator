@@ -154,6 +154,6 @@ void loop() {
   delay(100);
   RCSOFTCHECK(rclc_executor_spin(&motor_executor));
   delay(100);
-  analogWrite(motor0_pin, 1000);
+  analogWrite(MOTOR0_PIN, 1000);
   delay(100);
 }
