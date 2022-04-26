@@ -17,6 +17,11 @@
 #define LED_PIN 13
 #define MOTOR0_PIN 14
 
+const int PHz = 250;
+const int Pcyc = 1000000/PHz;
+const float pwmbit = 4095 /Pcyc;
+
+
 rcl_publisher_t publisher_imu;
 rcl_publisher_t publisher_mag;
 
@@ -24,17 +29,25 @@ rcl_subscription_t pwm_subscriber;
 
 rclc_executor_t executor;
 rclc_executor_t motor_executor;
+
 rclc_support_t support;
+
 rcl_allocator_t allocator;
+
 rcl_node_t node;
+
 rcl_timer_t timer;
 
 sensor_msgs__msg__Imu msg_imu;
 sensor_msgs__msg__MagneticField msg_mag;
-std_msgs__msg__Int32 msg_pwm;
+std_msgs__msg__Int32 msg;
 
+//char debagc;
 void error_loop(){
   while(1){
+    Serial.println("error");
+//    Serial.println(debagc);
+    
     digitalWrite(LED_PIN, !digitalRead(LED_PIN));
     delay(100);
   }
@@ -42,13 +55,14 @@ void error_loop(){
 
 void motor_callback(const void * msgin)
 {
-  const std_msgs__msg__Int32 * msg_pwm = (const std_msgs__msg__Int32 *)msgin;
-  //analogWrite(MOTOR0_PIN, 1000);
+  const std_msgs__msg__Int32 * msg = (const std_msgs__msg__Int32 *)msgin;
+  //analogWrite(MOTOR0_PIN, 1100*pwmbit);
   
 }
 
 void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 {  
+  analogWrite(MOTOR0_PIN, 1100*pwmbit);
   float ax, ay, az, gx, gy, gz, mx, my, mz;
   RCLC_UNUSED(last_call_time);
   if (timer != NULL){
@@ -90,35 +104,53 @@ void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 
 void setup() {
   set_microros_transports();
+//  debagc = 's';
+//  Serial.println("s");
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, HIGH);
+ 
   
   IMU.begin();
 
-  pinMode(MOTOR0_PIN, OUTPUT);
   
-  delay(5000);
+  
+  delay(3000);
   analogWriteResolution(12);
-  analogWriteFrequency(MOTOR0_PIN, 250);
   delay(1000);
-  analogWrite(MOTOR0_PIN, 4095);
-  delay(1000);
-  analogWrite(MOTOR0_PIN, 0);
-  delay(1000);
+  analogWriteFrequency(MOTOR0_PIN, PHz);
+  
+  analogWrite(MOTOR0_PIN, 2000*pwmbit);
+  
+  delay(3000);
+  
+  analogWrite(MOTOR0_PIN, 1000*pwmbit);
+  delay(3000);
+  ////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   allocator = rcl_get_default_allocator();
-
+  
+//  debagc = 'a';
+//  
+//  Serial.println("a");
+  
   // create init_options
   RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
-
+//  debagc = 'b';
+//  Serial.println("b");
+  
   // create node
   RCCHECK(rclc_node_init_default(&node, "pi_esp_communicator", "", &support));
-
+//  Serial.println("c");
+//  debagc = 'c';
   // create publisher
   RCCHECK(rclc_publisher_init_default(
     &publisher_imu,
     &node,
     ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Imu),
     "/copto/imu"));
-
+    
+//  Serial.println("d");
+//  debagc = 'd';
   RCCHECK(rclc_publisher_init_default(
     &publisher_mag,
     &node,
@@ -127,33 +159,38 @@ void setup() {
 
 
   // create subscriber
+  pwm_subscriber = rcl_get_zero_initialized_subscription();
   RCCHECK(rclc_subscription_init_default(
     &pwm_subscriber,
     &node,
     ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
     "/copto/motor0_pwm"));
 
+//  Serial.println("e");
+//  debagc = 'e';
   // create timer,
-  const unsigned int timer_timeout = 100;
+  const unsigned int timer_timeout = 5;
   RCCHECK(rclc_timer_init_default(
     &timer,
     &support,
     RCL_MS_TO_NS(timer_timeout),
     timer_callback));
 
+//  debagc = 'f';
+//  Serial.println("f");
   // create executor
-  RCCHECK( rclc_executor_init(&executor, &support.context, 2, &allocator));
+  executor = rclc_executor_get_zero_initialized_executor();
+  RCCHECK(rclc_executor_init(&executor, &support.context, 2, &allocator));
   RCCHECK(rclc_executor_add_timer(&executor, &timer));
 
+  motor_executor = rclc_executor_get_zero_initialized_executor();
   RCCHECK(rclc_executor_init(&motor_executor, &support.context, 2, &allocator));
-  RCCHECK(rclc_executor_add_subscription(&motor_executor, &pwm_subscriber, &msg_pwm, &motor_callback, ON_NEW_DATA));
+  RCCHECK(rclc_executor_add_subscription(&motor_executor, &pwm_subscriber, &msg, &motor_callback, ON_NEW_DATA));
 }
 
 void loop() {
   RCSOFTCHECK(rclc_executor_spin(&executor));
-  delay(100);
   RCSOFTCHECK(rclc_executor_spin(&motor_executor));
-  delay(100);
-  analogWrite(MOTOR0_PIN, 1000);
-  delay(100);
+//  Serial.println("c");
+  //analogWrite(MOTOR0_PIN, 1100*pwmbit);
 }
