@@ -16,6 +16,9 @@
 
 #define LED_PIN 13
 #define MOTOR0_PIN 14
+#define MOTOR1_PIN 15
+#define MOTOR2_PIN 18
+#define MOTOR3_PIN 19
 
 const int PHz = 250;
 const int Pcyc = 1000000/PHz;
@@ -63,6 +66,9 @@ void motor_callback(const void * msgin)
 void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 {  
   analogWrite(MOTOR0_PIN, 1100*pwmbit);
+  analogWrite(MOTOR1_PIN, 1100*pwmbit);
+  analogWrite(MOTOR2_PIN, 1100*pwmbit);
+  analogWrite(MOTOR3_PIN, 1100*pwmbit);
   float ax, ay, az, gx, gy, gz, mx, my, mz;
   RCLC_UNUSED(last_call_time);
   if (timer != NULL){
@@ -118,12 +124,21 @@ void setup() {
   analogWriteResolution(12);
   delay(1000);
   analogWriteFrequency(MOTOR0_PIN, PHz);
+  analogWriteFrequency(MOTOR1_PIN, PHz);
+  analogWriteFrequency(MOTOR2_PIN, PHz);
+  analogWriteFrequency(MOTOR3_PIN, PHz);
   
   analogWrite(MOTOR0_PIN, 2000*pwmbit);
+  analogWrite(MOTOR1_PIN, 2000*pwmbit);
+  analogWrite(MOTOR2_PIN, 2000*pwmbit);
+  analogWrite(MOTOR3_PIN, 2000*pwmbit);
   
   delay(3000);
   
   analogWrite(MOTOR0_PIN, 1000*pwmbit);
+  analogWrite(MOTOR1_PIN, 1000*pwmbit);
+  analogWrite(MOTOR2_PIN, 1000*pwmbit);
+  analogWrite(MOTOR3_PIN, 1000*pwmbit);
   delay(3000);
   ////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////////////////////////
